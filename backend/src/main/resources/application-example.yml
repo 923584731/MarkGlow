@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: markglow-backend
+  datasource:
+    url: jdbc:h2:mem:markglowdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+
+server:
+  port: 8080
+
+cors:
+  allowed-origins: http://localhost:3000
+
+# AI服务配置
+ai:
+  # 当前使用的AI服务: ernie (文心一言) 或 qwen (通义千问)
+  provider: ernie
+  # 文心一言配置（百度千帆平台 - ERNIE 4.5 Turbo）
+  # 获取API Key和App ID: https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application
+  ernie:
+    api-key: bce-v3/ALTAK-xxx/xxx  # Bearer Token格式的API Key
+    app-id: app-xxxxx               # 应用ID
+    model: ernie-4.5-turbo-128k     # 模型名称
+    api-url: https://qianfan.baidubce.com/v2/chat/completions
+  # 通义千问配置（百度千帆平台 - 通义千问3-235B-A22B）
+  # 获取API Key和App ID: https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application
+  qwen:
+    api-key: bce-v3/ALTAK-xxx/xxx   # Bearer Token格式的API Key
+    app-id: app-xxxxx               # 应用ID
+    model: qwen-3-235b-a22b         # 模型名称
+    api-url: https://qianfan.baidubce.com/v2/chat/completions
+

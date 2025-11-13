@@ -1,0 +1,45 @@
+/* AI 流式输出模态框样式 */
+.ai-stream-content {
+  /* 关键：保留所有空白字符和换行符 */
+  white-space: pre-wrap !important;
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+  word-wrap: break-word !important;
+  
+  min-height: 240px;
+  max-height: 60vh;
+  overflow: auto;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 14px;
+  line-height: 1.6;
+  margin: 0;
+  border: none;
+  color: #333;
+  
+  /* 防止文本被压缩 */
+  text-rendering: optimizeLegibility;
+  /* 确保空格不被合并 */
+  -webkit-font-feature-settings: "liga" off;
+  font-feature-settings: "liga" off;
+}
+
+/* 确保 Modal body 内的样式不被覆盖 */
+.ant-modal-body .ai-stream-content {
+  white-space: pre-wrap !important;
+}
+
+/* 确保 pre 标签内的格式正确 */
+.ant-modal-body pre.ai-stream-content {
+  white-space: pre-wrap !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+  /* 重置 pre 标签的默认样式 */
+  margin: 0;
+  padding: 12px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
