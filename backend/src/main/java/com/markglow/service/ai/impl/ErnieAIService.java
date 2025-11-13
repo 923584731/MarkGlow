@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.markglow.config.AIConfig;
 import com.markglow.service.ai.AIProvider;
 import com.markglow.service.ai.AIService;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
@@ -12,8 +13,6 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -31,9 +30,8 @@ import java.nio.charset.StandardCharsets;
  * 使用ERNIE 4.5 Turbo模型
  */
 @Service
+@Slf4j
 public class ErnieAIService implements AIService {
-
-    private static final Logger logger = LoggerFactory.getLogger(ErnieAIService.class);
 
     @Autowired
     private AIConfig aiConfig;
@@ -63,16 +61,16 @@ public class ErnieAIService implements AIService {
                                            Double temperature, Integer maxTokens,
                                            String model) {
         long startTime = System.currentTimeMillis();
-        logger.info("========== ERNIE AI 调用开始（非流式）==========");
+        log.info("========== ERNIE AI 调用开始（非流式）==========");
         String defaultModel = aiConfig.getErnie().getModel();
         double tempValue = temperature != null ? temperature : 0.7;
         int maxTokenValue = maxTokens != null ? maxTokens : 12288;
         String targetModel = (model != null && !model.isEmpty()) ? model : defaultModel;
 
-        logger.info("模型: {}", targetModel);
-        logger.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
-        logger.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
-        logger.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
+        log.info("模型: {}", targetModel);
+        log.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
+        log.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
+        log.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
         
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
@@ -82,15 +80,15 @@ public class ErnieAIService implements AIService {
             String apiKey = aiConfig.getErnie().getApiKey();
             String appId = aiConfig.getErnie().getAppId();
             
-            logger.info("API URL: {}", url);
-            logger.info("App ID: {}", appId);
-            logger.info("模型名称: {}", targetModel);
+            log.info("API URL: {}", url);
+            log.info("App ID: {}", appId);
+            log.info("模型名称: {}", targetModel);
 
             Map<String, Object> requestBody = buildRequestBody(prompt, systemPrompt, targetModel, tempValue, maxTokenValue, false);
 
             String jsonBody = JSON.toJSONString(requestBody);
-            logger.info("请求体大小: {} 字符", jsonBody.length());
-            logger.debug("请求体内容: {}", jsonBody);
+            log.info("请求体大小: {} 字符", jsonBody.length());
+            log.debug("请求体内容: {}", jsonBody);
 
             httpClient = HttpClients.createDefault();
             HttpPost httpPost = new HttpPost(url);
@@ -101,33 +99,33 @@ public class ErnieAIService implements AIService {
             }
             httpPost.setEntity(new StringEntity(jsonBody, "UTF-8"));
 
-            logger.info("发送HTTP请求...");
+            log.info("发送HTTP请求...");
             long requestStartTime = System.currentTimeMillis();
             response = httpClient.execute(httpPost);
             long requestTime = System.currentTimeMillis() - requestStartTime;
-            logger.info("HTTP请求完成，耗时: {} ms", requestTime);
+            log.info("HTTP请求完成，耗时: {} ms", requestTime);
             
             int statusCode = response.getStatusLine().getStatusCode();
-            logger.info("HTTP状态码: {}", statusCode);
+            log.info("HTTP状态码: {}", statusCode);
             
             if (statusCode != 200) {
                 String errorBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                logger.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
+                log.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
                 return "HTTP请求失败: " + statusCode + " - " + errorBody;
             }
             
             HttpEntity entity = response.getEntity();
             String responseBody = EntityUtils.toString(entity, StandardCharsets.UTF_8);
-            logger.info("响应体大小: {} 字符", responseBody.length());
-            logger.debug("响应体内容: {}", responseBody);
+            log.info("响应体大小: {} 字符", responseBody.length());
+            log.debug("响应体内容: {}", responseBody);
 
             JSONObject jsonResponse = JSON.parseObject(responseBody);
 
             if (jsonResponse.containsKey("error")) {
                 JSONObject error = jsonResponse.getJSONObject("error");
                 String errorMsg = "错误: " + error.getString("message");
-                logger.error("AI调用失败: {}", errorMsg);
-                logger.error("错误详情: {}", error.toJSONString());
+                log.error("AI调用失败: {}", errorMsg);
+                log.error("错误详情: {}", error.toJSONString());
                 return errorMsg;
             }
 
@@ -144,19 +142,19 @@ public class ErnieAIService implements AIService {
 
             if (result != null) {
                 long totalTime = System.currentTimeMillis() - startTime;
-                logger.info("AI调用成功，返回内容长度: {} 字符", result.length());
-                logger.info("总耗时: {} ms", totalTime);
-                logger.info("========== ERNIE AI 调用结束 ==========");
+                log.info("AI调用成功，返回内容长度: {} 字符", result.length());
+                log.info("总耗时: {} ms", totalTime);
+                log.info("========== ERNIE AI 调用结束 ==========");
                 return result;
             } else {
-                logger.error("无法解析响应: {}", responseBody);
+                log.error("无法解析响应: {}", responseBody);
                 return "未知错误: " + responseBody;
             }
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.error("AI调用异常，耗时: {} ms", totalTime, e);
-            logger.error("异常信息: {}", e.getMessage());
+            log.error("AI调用异常，耗时: {} ms", totalTime, e);
+            log.error("异常信息: {}", e.getMessage());
             return "调用AI服务失败: " + e.getMessage();
         } finally {
             closeResources(httpClient, response);
@@ -170,16 +168,16 @@ public class ErnieAIService implements AIService {
                                         Double temperature, Integer maxTokens,
                                         String model) {
         long startTime = System.currentTimeMillis();
-        logger.info("========== ERNIE AI 调用开始（流式）==========");
+        log.info("========== ERNIE AI 调用开始（流式）==========");
         String defaultModel = aiConfig.getErnie().getModel();
         double tempValue = temperature != null ? temperature : 0.7;
         int maxTokenValue = 12288;
         String targetModel = (model != null && !model.isEmpty()) ? model : defaultModel;
 
-        logger.info("模型: {}", targetModel);
-        logger.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
-        logger.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
-        logger.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
+        log.info("模型: {}", targetModel);
+        log.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
+        log.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
+        log.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
         
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
@@ -190,15 +188,15 @@ public class ErnieAIService implements AIService {
             String apiKey = aiConfig.getErnie().getApiKey();
             String appId = aiConfig.getErnie().getAppId();
             
-            logger.info("API URL: {}", url);
-            logger.info("App ID: {}", appId);
-            logger.info("模型名称: {}", targetModel);
+            log.info("API URL: {}", url);
+            log.info("App ID: {}", appId);
+            log.info("模型名称: {}", targetModel);
 
             Map<String, Object> requestBody = buildRequestBody(prompt, systemPrompt, targetModel, tempValue, maxTokenValue, true);
 
             String jsonBody = JSON.toJSONString(requestBody);
-            logger.info("请求体大小: {} 字符", jsonBody.length());
-            logger.debug("请求体内容: {}", jsonBody);
+            log.info("请求体大小: {} 字符", jsonBody.length());
+            log.debug("请求体内容: {}", jsonBody);
 
             httpClient = HttpClients.createDefault();
             HttpPost httpPost = new HttpPost(url);
@@ -209,23 +207,23 @@ public class ErnieAIService implements AIService {
             }
             httpPost.setEntity(new StringEntity(jsonBody, "UTF-8"));
 
-            logger.info("发送HTTP请求（流式）...");
+            log.info("发送HTTP请求（流式）...");
             long requestStartTime = System.currentTimeMillis();
             response = httpClient.execute(httpPost);
             long requestTime = System.currentTimeMillis() - requestStartTime;
-            logger.info("HTTP请求完成，耗时: {} ms", requestTime);
+            log.info("HTTP请求完成，耗时: {} ms", requestTime);
             
             int statusCode = response.getStatusLine().getStatusCode();
-            logger.info("HTTP状态码: {}", statusCode);
+            log.info("HTTP状态码: {}", statusCode);
             
             if (statusCode != 200) {
                 String errorBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                logger.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
+                log.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
                 return "HTTP请求失败: " + statusCode + " - " + errorBody;
             }
             
             HttpEntity entity = response.getEntity();
-            logger.info("开始读取流式响应...");
+            log.info("开始读取流式响应...");
             
             StringBuilder buffer = new StringBuilder();
             int chunkCount = 0;
@@ -240,7 +238,7 @@ public class ErnieAIService implements AIService {
                 
                 // 处理 SSE 格式: data: {...}
                 if (!line.startsWith("data:")) {
-                    logger.debug("忽略非 data 行: {}", line);
+                    log.debug("忽略非 data 行: {}", line);
                     continue;
                 }
                 
@@ -248,10 +246,10 @@ public class ErnieAIService implements AIService {
                 if (payload.isEmpty()) {
                     continue;
                 }
-                logger.info("接收到数据块: {}", payload);
+                log.info("接收到数据块: {}", payload);
                 // 检查结束标记
                 if ("[DONE]".equalsIgnoreCase(payload)) {
-                    logger.info("接收到 [DONE]，结束读取");
+                    log.info("接收到 [DONE]，结束读取");
                     break;
                 }
                 
@@ -263,8 +261,8 @@ public class ErnieAIService implements AIService {
                     if (chunk.containsKey("error")) {
                         JSONObject error = chunk.getJSONObject("error");
                         String errorMsg = "错误: " + error.getString("message");
-                        logger.error("AI流式调用失败: {}", errorMsg);
-                        logger.error("错误详情: {}", error.toJSONString());
+                        log.error("AI流式调用失败: {}", errorMsg);
+                        log.error("错误详情: {}", error.toJSONString());
                         return errorMsg;
                     }
                     
@@ -293,26 +291,26 @@ public class ErnieAIService implements AIService {
                                     // 避免重复追加
                                     if (!buffer.toString().contains(messageContent)) {
                                         buffer.append(messageContent);
-                                        logger.debug("收到完整消息，内容长度: {}", messageContent.length());
+                                        log.debug("收到完整消息，内容长度: {}", messageContent.length());
                                     }
                                 }
                             }
                         }
                     }
                 } catch (Exception ex) {
-                    logger.warn("解析流式数据失败，chunk #{}: {}", chunkCount, payload, ex);
+                    log.warn("解析流式数据失败，chunk #{}: {}", chunkCount, payload, ex);
                     // 继续处理下一行，不中断
                 }
             }
             
             String result = buffer.toString();
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("流式读取完成，共处理 {} 个 chunk，最终内容长度: {} 字符", chunkCount, result.length());
-            logger.info("总耗时: {} ms", totalTime);
-            logger.info("========== ERNIE AI 调用结束 ==========");
+            log.info("流式读取完成，共处理 {} 个 chunk，最终内容长度: {} 字符", chunkCount, result.length());
+            log.info("总耗时: {} ms", totalTime);
+            log.info("========== ERNIE AI 调用结束 ==========");
             
             if (result.isEmpty()) {
-                logger.warn("流式响应为空，可能未正确解析");
+                log.warn("流式响应为空，可能未正确解析");
                 return "流式响应为空";
             }
             
@@ -320,15 +318,15 @@ public class ErnieAIService implements AIService {
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.error("AI流式调用异常，耗时: {} ms", totalTime, e);
-            logger.error("异常信息: {}", e.getMessage(), e);
+            log.error("AI流式调用异常，耗时: {} ms", totalTime, e);
+            log.error("异常信息: {}", e.getMessage(), e);
             return "调用AI服务失败: " + e.getMessage();
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (Exception e) {
-                    logger.warn("关闭流式读取器失败", e);
+                    log.warn("关闭流式读取器失败", e);
                 }
             }
             closeResources(httpClient, response);
@@ -373,16 +371,16 @@ public class ErnieAIService implements AIService {
                                         Double temperature, Integer maxTokens,
                                         String model, Consumer<String> chunkConsumer) {
         long startTime = System.currentTimeMillis();
-        logger.info("========== ERNIE AI 流式调用开始（实时回调）==========");
+        log.info("========== ERNIE AI 流式调用开始（实时回调）==========");
         String defaultModel = aiConfig.getErnie().getModel();
         double tempValue = temperature != null ? temperature : 0.7;
         int maxTokenValue = 12288;
         String targetModel = (model != null && !model.isEmpty()) ? model : defaultModel;
 
-        logger.info("模型: {}", targetModel);
-        logger.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
-        logger.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
-        logger.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
+        log.info("模型: {}", targetModel);
+        log.info("系统提示词: {}", systemPrompt != null ? systemPrompt.substring(0, Math.min(100, systemPrompt.length())) + "..." : "无");
+        log.info("用户提示词长度: {} 字符", prompt != null ? prompt.length() : 0);
+        log.info("temperature={}, maxTokens={}", tempValue, maxTokenValue);
         
         CloseableHttpClient httpClient = null;
         CloseableHttpResponse response = null;
@@ -393,15 +391,15 @@ public class ErnieAIService implements AIService {
             String apiKey = aiConfig.getErnie().getApiKey();
             String appId = aiConfig.getErnie().getAppId();
             
-            logger.info("API URL: {}", url);
-            logger.info("App ID: {}", appId);
-            logger.info("模型名称: {}", targetModel);
+            log.info("API URL: {}", url);
+            log.info("App ID: {}", appId);
+            log.info("模型名称: {}", targetModel);
 
             Map<String, Object> requestBody = buildRequestBody(prompt, systemPrompt, targetModel, tempValue, maxTokenValue, true);
 
             String jsonBody = JSON.toJSONString(requestBody);
-            logger.info("请求体大小: {} 字符", jsonBody.length());
-            logger.debug("请求体内容: {}", jsonBody);
+            log.info("请求体大小: {} 字符", jsonBody.length());
+            log.debug("请求体内容: {}", jsonBody);
 
             httpClient = HttpClients.createDefault();
             HttpPost httpPost = new HttpPost(url);
@@ -412,23 +410,23 @@ public class ErnieAIService implements AIService {
             }
             httpPost.setEntity(new StringEntity(jsonBody, "UTF-8"));
 
-            logger.info("发送HTTP请求（流式回调）...");
+            log.info("发送HTTP请求（流式回调）...");
             long requestStartTime = System.currentTimeMillis();
             response = httpClient.execute(httpPost);
             long requestTime = System.currentTimeMillis() - requestStartTime;
-            logger.info("HTTP请求完成，耗时: {} ms", requestTime);
+            log.info("HTTP请求完成，耗时: {} ms", requestTime);
             
             int statusCode = response.getStatusLine().getStatusCode();
-            logger.info("HTTP状态码: {}", statusCode);
+            log.info("HTTP状态码: {}", statusCode);
             
             if (statusCode != 200) {
                 String errorBody = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-                logger.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
+                log.error("HTTP请求失败，状态码: {}, 响应: {}", statusCode, errorBody);
                 return "HTTP请求失败: " + statusCode + " - " + errorBody;
             }
             
             HttpEntity entity = response.getEntity();
-            logger.info("开始读取流式响应（实时回调）...");
+            log.info("开始读取流式响应（实时回调）...");
             
             StringBuilder buffer = new StringBuilder();
             int chunkCount = 0;
@@ -443,7 +441,7 @@ public class ErnieAIService implements AIService {
                 
                 // 处理 SSE 格式: data: {...}
                 if (!line.startsWith("data:")) {
-                    logger.debug("忽略非 data 行: {}", line);
+                    log.debug("忽略非 data 行: {}", line);
                     continue;
                 }
                 
@@ -454,7 +452,7 @@ public class ErnieAIService implements AIService {
                 
                 // 检查结束标记
                 if ("[DONE]".equalsIgnoreCase(payload)) {
-                    logger.info("接收到 [DONE]，结束读取");
+                    log.info("接收到 [DONE]，结束读取");
                     break;
                 }
                 
@@ -466,8 +464,8 @@ public class ErnieAIService implements AIService {
                     if (chunk.containsKey("error")) {
                         JSONObject error = chunk.getJSONObject("error");
                         String errorMsg = "错误: " + error.getString("message");
-                        logger.error("AI流式调用失败: {}", errorMsg);
-                        logger.error("错误详情: {}", error.toJSONString());
+                        log.error("AI流式调用失败: {}", errorMsg);
+                        log.error("错误详情: {}", error.toJSONString());
                         return errorMsg;
                     }
                     
@@ -481,7 +479,7 @@ public class ErnieAIService implements AIService {
                             
                             // 优先使用 delta.content（流式增量）
                             JSONObject delta = choice.getJSONObject("delta");
-                            logger.info("choices[{}]: {}", i, delta);
+                            log.info("choices[{}]: {}", i, delta);
                             if (delta != null) {
                                 String deltaContent = delta.getString("content");
                                 if (deltaContent != null && !deltaContent.isEmpty()) {
@@ -492,7 +490,7 @@ public class ErnieAIService implements AIService {
                                         try {
                                             chunkConsumer.accept(deltaContent);
                                         } catch (Exception e) {
-                                            logger.warn("回调函数执行失败", e);
+                                            log.warn("回调函数执行失败", e);
                                         }
                                     }
                                 }
@@ -511,7 +509,7 @@ public class ErnieAIService implements AIService {
                                             try {
                                                 chunkConsumer.accept(messageContent);
                                             } catch (Exception e) {
-                                                logger.warn("回调函数执行失败", e);
+                                                log.warn("回调函数执行失败", e);
                                             }
                                         }
                                     }
@@ -520,19 +518,19 @@ public class ErnieAIService implements AIService {
                         }
                     }
                 } catch (Exception ex) {
-                    logger.warn("解析流式数据失败，chunk #{}: {}", chunkCount, payload, ex);
+                    log.warn("解析流式数据失败，chunk #{}: {}", chunkCount, payload, ex);
                     // 继续处理下一行，不中断
                 }
             }
             
             String result = buffer.toString();
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.info("流式读取完成，共处理 {} 个 chunk，最终内容长度: {} 字符", chunkCount, result.length());
-            logger.info("总耗时: {} ms", totalTime);
-            logger.info("========== ERNIE AI 流式调用结束 ==========");
+            log.info("流式读取完成，共处理 {} 个 chunk，最终内容长度: {} 字符", chunkCount, result.length());
+            log.info("总耗时: {} ms", totalTime);
+            log.info("========== ERNIE AI 流式调用结束 ==========");
             
             if (result.isEmpty()) {
-                logger.warn("流式响应为空，可能未正确解析");
+                log.warn("流式响应为空，可能未正确解析");
                 return "流式响应为空";
             }
             
@@ -540,15 +538,15 @@ public class ErnieAIService implements AIService {
 
         } catch (Exception e) {
             long totalTime = System.currentTimeMillis() - startTime;
-            logger.error("AI流式调用异常，耗时: {} ms", totalTime, e);
-            logger.error("异常信息: {}", e.getMessage(), e);
+            log.error("AI流式调用异常，耗时: {} ms", totalTime, e);
+            log.error("异常信息: {}", e.getMessage(), e);
             return "调用AI服务失败: " + e.getMessage();
         } finally {
             if (reader != null) {
                 try {
                     reader.close();
                 } catch (Exception e) {
-                    logger.warn("关闭流式读取器失败", e);
+                    log.warn("关闭流式读取器失败", e);
                 }
             }
             closeResources(httpClient, response);
@@ -563,14 +561,14 @@ public class ErnieAIService implements AIService {
             try {
                 response.close();
             } catch (Exception e) {
-                logger.warn("关闭HTTP响应失败", e);
+                log.warn("关闭HTTP响应失败", e);
             }
         }
         if (httpClient != null) {
             try {
                 httpClient.close();
             } catch (Exception e) {
-                logger.warn("关闭HTTP客户端失败", e);
+                log.warn("关闭HTTP客户端失败", e);
             }
         }
     }

@@ -1,12 +1,14 @@
-import React from 'react';
-import { Card, Button, Tag, Space } from 'antd';
-import { ArrowLeftOutlined, DownloadOutlined } from '@ant-design/icons';
+import React, { useState } from 'react';
+import { Card, Button, Tag, Space, Drawer } from 'antd';
+import { ArrowLeftOutlined, DownloadOutlined, BarChartOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { themes } from '../themes/themes';
+import DocumentAnalysisPanel from './DocumentAnalysisPanel';
 import './DocumentView.css';
 
 function DocumentView({ document, onBack }) {
+  const [showAnalysisDrawer, setShowAnalysisDrawer] = useState(false);
   const handleExport = () => {
     const exportContent = document.beautifiedContent || document.originalContent;
     const blob = new Blob([exportContent], { type: 'text/markdown' });
@@ -41,6 +43,12 @@ function DocumentView({ document, onBack }) {
         </Space>
         <Space>
           <Tag color="blue">{currentTheme}</Tag>
+          <Button 
+            icon={<BarChartOutlined />} 
+            onClick={() => setShowAnalysisDrawer(true)}
+          >
+            文档分析
+          </Button>
           <Button type="primary" icon={<DownloadOutlined />} onClick={handleExport}>
             导出文件
           </Button>
@@ -64,6 +72,16 @@ function DocumentView({ document, onBack }) {
           </ReactMarkdown>
         </div>
       </div>
+
+      <Drawer
+        title="文档分析"
+        placement="right"
+        width={600}
+        onClose={() => setShowAnalysisDrawer(false)}
+        open={showAnalysisDrawer}
+      >
+        <DocumentAnalysisPanel content={content} documentId={document.id} />
+      </Drawer>
     </Card>
   );
 }

@@ -3,6 +3,7 @@ package com.markglow.controller;
 import com.markglow.dto.BeautifyRequest;
 import com.markglow.dto.BeautifyResponse;
 import com.markglow.service.AIBeautifyService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/beautify")
 @CrossOrigin(origins = "*")
+@Slf4j
 public class AIBeautifyController {
 
     @Autowired

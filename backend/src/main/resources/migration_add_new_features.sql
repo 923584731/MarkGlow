@@ -1,21 +1,10 @@
--- MarkGlow 数据库表结构
--- 创建时间: 2025-01-XX
+-- MarkGlow 新功能数据库迁移脚本
+-- 添加：提示词模板库、使用统计、RAG知识库
+-- 执行时间: 2025-01-XX
 
--- 1. 文档表（已存在）
-CREATE TABLE IF NOT EXISTS `documents` (
-  `id` BIGINT NOT NULL AUTO_INCREMENT,
-  `title` VARCHAR(255) NOT NULL,
-  `original_content` TEXT,
-  `beautified_content` TEXT,
-  `theme` VARCHAR(50),
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  INDEX `idx_title` (`title`),
-  INDEX `idx_created_at` (`created_at`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- 2. 提示词模板表
+-- ============================================
+-- 1. 提示词模板表
+-- ============================================
 CREATE TABLE IF NOT EXISTS `prompt_templates` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL COMMENT '模板名称',
@@ -31,7 +20,9 @@ CREATE TABLE IF NOT EXISTS `prompt_templates` (
   INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='提示词模板库';
 
--- 3. AI使用记录表
+-- ============================================
+-- 2. AI使用记录表
+-- ============================================
 CREATE TABLE IF NOT EXISTS `ai_usage_records` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `action` VARCHAR(100) NOT NULL COMMENT 'AI操作类型：beautify, improve, summarize等',
@@ -50,7 +41,9 @@ CREATE TABLE IF NOT EXISTS `ai_usage_records` (
   INDEX `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI使用统计记录';
 
--- 4. 知识库表
+-- ============================================
+-- 3. 知识库表
+-- ============================================
 CREATE TABLE IF NOT EXISTS `knowledge_bases` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `name` VARCHAR(255) NOT NULL COMMENT '知识库名称',
@@ -62,7 +55,9 @@ CREATE TABLE IF NOT EXISTS `knowledge_bases` (
   INDEX `idx_created_at` (`created_at`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='RAG知识库';
 
--- 5. 知识库块表
+-- ============================================
+-- 4. 知识库块表
+-- ============================================
 CREATE TABLE IF NOT EXISTS `knowledge_chunks` (
   `id` BIGINT NOT NULL AUTO_INCREMENT,
   `knowledge_base_id` BIGINT NOT NULL COMMENT '所属知识库ID',
@@ -76,3 +71,18 @@ CREATE TABLE IF NOT EXISTS `knowledge_chunks` (
   CONSTRAINT `fk_chunk_knowledge_base` FOREIGN KEY (`knowledge_base_id`) 
     REFERENCES `knowledge_bases` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='知识库文档块';
+
+-- ============================================
+-- 插入示例数据（可选）
+-- ============================================
+
+-- 示例提示词模板
+INSERT INTO `prompt_templates` (`name`, `description`, `category`, `content`, `variables`) VALUES
+('技术文档写作', '用于编写技术文档的模板', '写作助手', 
+ '请帮我写一篇关于{{topic}}的技术文档，要求：\n1. 结构清晰\n2. 包含代码示例\n3. 易于理解', 
+ '[{"name":"topic","description":"技术主题","defaultValue":"API使用"}]'),
+('内容优化', '优化文本表达的模板', '内容优化', 
+ '请优化以下内容，使其更加{{style}}：\n\n{{content}}', 
+ '[{"name":"style","description":"优化风格","defaultValue":"专业、清晰"},{"name":"content","description":"待优化内容","defaultValue":""}]')
+ON DUPLICATE KEY UPDATE `name`=`name`;
+

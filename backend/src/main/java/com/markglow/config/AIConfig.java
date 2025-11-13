@@ -6,17 +6,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 @ConfigurationProperties(prefix = "ai")
 public class AIConfig {
-    private String provider = "ernie";
     private ErnieConfig ernie;
-    private QwenConfig qwen;
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
 
     public ErnieConfig getErnie() {
         return ernie;
@@ -24,14 +14,6 @@ public class AIConfig {
 
     public void setErnie(ErnieConfig ernie) {
         this.ernie = ernie;
-    }
-
-    public QwenConfig getQwen() {
-        return qwen;
-    }
-
-    public void setQwen(QwenConfig qwen) {
-        this.qwen = qwen;
     }
 
     public static class ErnieConfig {

@@ -16,6 +16,10 @@ public class DocumentService {
     @Autowired
     private DocumentRepository documentRepository;
 
+    /**
+     * 获取所有文档（按更新时间倒序）
+     * @return 文档DTO列表
+     */
     public List<DocumentDTO> getAllDocuments() {
         return documentRepository.findAllByOrderByUpdatedAtDesc()
                 .stream()
@@ -23,6 +27,11 @@ public class DocumentService {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * 根据ID获取单个文档
+     * @param id 文档ID
+     * @return 文档DTO
+     */
     public DocumentDTO getDocumentById(Long id) {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("文档不存在: " + id));
@@ -30,6 +39,11 @@ public class DocumentService {
     }
 
     @Transactional
+    /**
+     * 新建/保存文档
+     * @param documentDTO 文档数据
+     * @return 保存后的文档DTO
+     */
     public DocumentDTO saveDocument(DocumentDTO documentDTO) {
         Document document = convertToEntity(documentDTO);
         if (document.getTitle() == null || document.getTitle().trim().isEmpty()) {
@@ -40,6 +54,12 @@ public class DocumentService {
     }
 
     @Transactional
+    /**
+     * 更新文档
+     * @param id 文档ID
+     * @param documentDTO 新内容
+     * @return 更新后的文档DTO
+     */
     public DocumentDTO updateDocument(Long id, DocumentDTO documentDTO) {
         Document document = documentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("文档不存在: " + id));
@@ -62,6 +82,10 @@ public class DocumentService {
     }
 
     @Transactional
+    /**
+     * 删除文档
+     * @param id 文档ID
+     */
     public void deleteDocument(Long id) {
         if (!documentRepository.existsById(id)) {
             throw new RuntimeException("文档不存在: " + id);

@@ -1,7 +1,10 @@
 package com.markglow.dto;
 
+import lombok.Data;
+
 import java.util.Map;
 
+@Data
 public class AIResponse {
     private String result;
     private Map<String, Object> data;
@@ -26,36 +29,6 @@ public class AIResponse {
         this.message = message;
     }
 
-    public String getResult() {
-        return result;
-    }
 
-    public void setResult(String result) {
-        this.result = result;
-    }
-
-    public Map<String, Object> getData() {
-        return data;
-    }
-
-    public void setData(Map<String, Object> data) {
-        this.data = data;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }
 

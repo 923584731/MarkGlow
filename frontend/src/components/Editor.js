@@ -1,11 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Button, Select, Space, Input, message, Modal } from 'antd';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { Button, Select, Space, Input, message, Modal, Drawer } from 'antd';
 import { 
   ImportOutlined, 
   SaveOutlined, 
   ExportOutlined, 
-  ThunderboltOutlined,
-  PlayCircleOutlined
+  BarChartOutlined
 } from '@ant-design/icons';
 import Split from 'react-split';
 import ReactMarkdown from 'react-markdown';
@@ -16,6 +15,7 @@ import AIDropdown from './AIDropdown';
 import FloatingToolbar from './FloatingToolbar';
 import AIResultModal from './AIResultModal';
 import AIStreamModal from './AIStreamModal';
+import DocumentAnalysisPanel from './DocumentAnalysisPanel';
 import './Editor.css';
 import { themes } from '../themes/themes';
 
@@ -50,11 +50,12 @@ function hello() {
   const [beautifiedContent, setBeautifiedContent] = useState('');
   const [currentTheme, setCurrentTheme] = useState('default');
   const [isBeautifying, setIsBeautifying] = useState(false);
-  const [showAISidebar, setShowAISidebar] = useState(false);
+  const [showAnalysisDrawer, setShowAnalysisDrawer] = useState(false);
   const [selectedText, setSelectedText] = useState('');
   const [selectionPosition, setSelectionPosition] = useState(null);
   const [aiResult, setAiResult] = useState(null);
   const [aiAction, setAiAction] = useState(null);
+  const [aiModalTrigger, setAiModalTrigger] = useState(null);
   const [aiParams, setAiParams] = useState({ model: '', temperature: 0.7, maxTokens: 2048, provider: '', useStream: false });
   const [streaming, setStreaming] = useState(false);
   const [streamText, setStreamText] = useState('');
@@ -546,10 +547,10 @@ function hello() {
             handleQuickAction('summarize');
           }
         }
-        // Ctrl+K 或 Cmd+K: 打开AI侧边栏
+        // Ctrl+K 或 Cmd+K: 打开AI弹窗
         if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
           e.preventDefault();
-          setShowAISidebar(true);
+          setAiModalTrigger({ action: 'improve', timestamp: Date.now() });
         }
       }
     };
@@ -647,6 +648,10 @@ function hello() {
 
   const currentThemeStyles = themes[currentTheme] || themes.default;
 
+  const handleOpenAiModal = useCallback((action) => {
+    setAiModalTrigger({ action, timestamp: Date.now() });
+  }, []);
+
   return (
     <div className="editor-container">
       <div className="editor-toolbar" style={{ padding: '12px', background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
@@ -662,25 +667,21 @@ function hello() {
             导入文件
           </Button>
           <AIDropdown
-            content={content}
-            selectedText={selectedText}
-            onResult={handleAIResult}
-            onOpenSidebar={() => setShowAISidebar(true)}
-            onStartStream={startStream}
-            useStream={aiParams.useStream}
+            onOpenAiModal={handleOpenAiModal}
           />
-          <Button 
-            icon={<PlayCircleOutlined />}
-            type={aiParams.useStream ? 'primary' : 'default'}
-            onClick={() => setAiParams(prev => ({ ...prev, useStream: !prev.useStream }))}
-          >
-            {aiParams.useStream ? '流式输出：开' : '流式输出：关'}
-          </Button>
+          {/* 流式输出按钮已移除，改由弹窗内控制 */}
           <Button icon={<SaveOutlined />} onClick={handleSave}>
             保存文档
           </Button>
           <Button icon={<ExportOutlined />} onClick={handleExport}>
             导出文件
+          </Button>
+          <Button 
+            icon={<BarChartOutlined />} 
+            onClick={() => setShowAnalysisDrawer(true)}
+            title="文档分析"
+          >
+            文档分析
           </Button>
         </div>
         <div className="toolbar-right" style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
@@ -769,12 +770,11 @@ function hello() {
         content={content}
         selectedText={selectedText}
         onResult={handleAIResult}
-        onClose={() => setShowAISidebar(false)}
-        isOpen={showAISidebar}
         aiParams={aiParams}
         onParamsChange={(params) => setAiParams(prev => ({ ...prev, ...params }))}
         onStartStream={startStream}
-        onToggleStream={() => setAiParams(prev => ({ ...prev, useStream: !prev.useStream }))}
+        externalTrigger={aiModalTrigger}
+        onModalClose={() => setAiModalTrigger(null)}
       />
 
       {aiResult && (
@@ -800,6 +800,16 @@ function hello() {
         onApplyAppend={(text, action) => { stopStream(); handleAppend(text, action || streamAction); }}
         onClose={() => { stopStream(); }}
       />
+
+      <Drawer
+        title="文档分析"
+        placement="right"
+        width={600}
+        onClose={() => setShowAnalysisDrawer(false)}
+        open={showAnalysisDrawer}
+      >
+        <DocumentAnalysisPanel content={content} documentId={document?.id} />
+      </Drawer>
     </div>
   );
 }

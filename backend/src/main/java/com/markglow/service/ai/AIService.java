@@ -24,11 +24,9 @@ public interface AIService {
      * @param model 指定模型
      * @return AI生成的内容
      */
-    default String generateContent(String prompt, String systemPrompt,
-                                   Double temperature, Integer maxTokens,
-                                   Boolean stream, String model) {
-        return generateContent(prompt, systemPrompt);
-    }
+    String generateContent(String prompt, String systemPrompt,
+                           Double temperature, Integer maxTokens,
+                           Boolean stream, String model);
     
     /**
      * 流式生成内容，每收到一个chunk就调用回调函数

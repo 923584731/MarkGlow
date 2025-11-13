@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { List, Input, Select, Card, Button, Space, Tag, Empty, Spin, Typography } from 'antd';
-import { SearchOutlined, ReloadOutlined, EyeOutlined, DeleteOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
+import { SearchOutlined, ReloadOutlined, DeleteOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import './DocumentList.css';
 
 const { Paragraph, Text } = Typography;
@@ -8,6 +8,25 @@ const { Paragraph, Text } = Typography;
 function DocumentList({ documents, loading, onView, onDelete, onRefresh, onSearch, onEdit }) {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [searchType, setSearchType] = useState('all');
+  const [pagination, setPagination] = useState({ current: 1, pageSize: 12 });
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, current: 1 }));
+  }, [documents]);
+
+  const paginatedDocuments = useMemo(() => {
+    const { current, pageSize } = pagination;
+    const startIndex = (current - 1) * pageSize;
+    return documents.slice(startIndex, startIndex + pageSize);
+  }, [documents, pagination]);
+
+  const handlePageChange = (page, pageSize) => {
+    setPagination({ current: page, pageSize });
+  };
+
+  const handlePageSizeChange = (_current, size) => {
+    setPagination({ current: 1, pageSize: size });
+  };
+
 
   const formatDate = (dateString) => {
     if (!dateString) return '';
@@ -97,11 +116,15 @@ function DocumentList({ documents, loading, onView, onDelete, onRefresh, onSearc
                 xl: 4,
                 xxl: 6,
               }}
-              dataSource={documents}
+              dataSource={paginatedDocuments}
               pagination={{
-                pageSize: 12,
+                current: pagination.current,
+                pageSize: pagination.pageSize,
+                total: documents.length,
                 showSizeChanger: true,
                 showTotal: (total) => `共 ${total} 条`,
+                onChange: handlePageChange,
+                onShowSizeChange: handlePageSizeChange,
               }}
               renderItem={(doc) => {
                 const preview = doc.beautifiedContent || doc.originalContent || '无内容';
@@ -115,35 +138,10 @@ function DocumentList({ documents, loading, onView, onDelete, onRefresh, onSearc
                           <Tag color="blue">{doc.theme || 'default'}</Tag>
                         </Space>
                       }
-                      extra={
-                        <Space size="small">
-                          <Button
-                            type="link"
-                            icon={<EditOutlined />}
-                            onClick={() => onEdit && onEdit(doc)}
-                          >
-                            编辑
-                          </Button>
-                          <Button
-                            type="link"
-                            icon={<EyeOutlined />}
-                            onClick={() => onView(doc)}
-                          >
-                            查看
-                          </Button>
-                          <Button
-                            type="link"
-                            danger
-                            icon={<DeleteOutlined />}
-                            onClick={() => onDelete(doc.id)}
-                          >
-                            删除
-                          </Button>
-                        </Space>
-                      }
                       styles={{
                         body: { minHeight: 160, display: 'flex', flexDirection: 'column' },
                       }}
+                      onClick={() => onView && onView(doc)}
                     >
                       <Paragraph
                         ellipsis={{ rows: 4, expandable: false }}
@@ -151,7 +149,32 @@ function DocumentList({ documents, loading, onView, onDelete, onRefresh, onSearc
                       >
                         {preview}
                       </Paragraph>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', color: '#999' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: '#999' }}>
+                        <Space size="small">
+                          <Button
+                            size="small"
+                            type="link"
+                            icon={<EditOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onEdit && onEdit(doc);
+                            }}
+                          >
+                            编辑
+                          </Button>
+                          <Button
+                            size="small"
+                            type="link"
+                            danger
+                            icon={<DeleteOutlined />}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDelete(doc.id);
+                            }}
+                          >
+                            删除
+                          </Button>
+                        </Space>
                         <span>更新时间：{doc.updatedAt ? formatDate(doc.updatedAt) : '-'}</span>
                       </div>
                     </Card>

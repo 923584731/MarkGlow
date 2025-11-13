@@ -1,7 +1,7 @@
 package com.markglow.service.ai;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.markglow.service.AIStatisticsService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -13,12 +13,14 @@ import java.util.function.Consumer;
  * 增强的AI服务，提供各种AI功能
  */
 @Service
+@Slf4j
 public class EnhancedAIService {
-
-    private static final Logger logger = LoggerFactory.getLogger(EnhancedAIService.class);
 
     @Autowired
     private AIServiceFactory aiServiceFactory;
+
+    @Autowired
+    private AIStatisticsService statisticsService;
 
     private String invokeAI(String systemPrompt, String prompt,
                             Double temperature, Integer maxTokens,
@@ -32,7 +34,7 @@ public class EnhancedAIService {
      */
     public String routeAction(String action, String content, Double temperature, Integer maxTokens, String model, Boolean stream, String style, String targetLang) {
         String actionSafe = action != null ? action : "beautify";
-        logger.info(">> 路由AI动作 action={}, temp={}, maxTokens={}, model={}, stream={}, style={}, targetLang={}", actionSafe, temperature, maxTokens, model, stream, style, targetLang);
+        log.info(">> 路由AI动作 action={}, temp={}, maxTokens={}, model={}, stream={}, style={}, targetLang={}", actionSafe, temperature, maxTokens, model, stream, style, targetLang);
         switch (actionSafe) {
             case "beautify":
                 return beautifyMarkdown(content, temperature, maxTokens, stream, model);
@@ -47,7 +49,7 @@ public class EnhancedAIService {
             case "complete":
                 return suggestCompletion(content, temperature, maxTokens, stream, model);
             default:
-                logger.info("未知 action：{}，回退到 beautify", actionSafe);
+                log.info("未知 action：{}，回退到 beautify", actionSafe);
                 return beautifyMarkdown(content, temperature, maxTokens, stream, model);
         }
     }
@@ -56,9 +58,10 @@ public class EnhancedAIService {
      * 流式路由：根据 action 分发到对应功能，支持实时流式回调
      */
     public String routeActionStream(String action, String content, Double temperature, Integer maxTokens, 
-                                    String model, String style, String targetLang, Consumer<String> chunkConsumer) {
+                                    String model, String style, String targetLang,
+                                    Consumer<String> chunkConsumer) {
         String actionSafe = action != null ? action : "beautify";
-        logger.info(">> 流式路由AI动作 action={}, temp={}, maxTokens={}, model={}, style={}, targetLang={}", 
+        log.info(">> 流式路由AI动作 action={}, temp={}, maxTokens={}, model={}, style={}, targetLang={}", 
                 actionSafe, temperature, maxTokens, model, style, targetLang);
         
         AIService aiService = aiServiceFactory.getDefaultService();
@@ -93,7 +96,7 @@ public class EnhancedAIService {
                 prompt = "请补全以下文本：\n\n" + content;
                 break;
             default:
-                logger.info("未知 action：{}，回退到 beautify", actionSafe);
+                log.info("未知 action：{}，回退到 beautify", actionSafe);
                 systemPrompt = "你是一个Markdown文档美化专家。请优化以下Markdown内容的格式、排版和结构，使其更加清晰易读。保持原有内容不变，只优化格式。";
                 prompt = "请美化以下Markdown内容：\n\n" + content;
                 break;
@@ -110,12 +113,12 @@ public class EnhancedAIService {
     }
 
     public String beautifyMarkdown(String content, Double temperature, Integer maxTokens, Boolean stream, String model) {
-        logger.info(">>> 调用AI美化功能");
-        logger.info("输入内容长度: {} 字符", content != null ? content.length() : 0);
+        log.info(">>> 调用AI美化功能");
+        log.info("输入内容长度: {} 字符", content != null ? content.length() : 0);
         String systemPrompt = "你是一个Markdown文档美化专家。请优化以下Markdown内容的格式、排版和结构，使其更加清晰易读。保持原有内容不变，只优化格式。";
         String prompt = "请美化以下Markdown内容：\n\n" + content;
         String result = invokeAI(systemPrompt, prompt, temperature, maxTokens, stream, model);
-        logger.info("美化完成，输出长度: {} 字符", result != null ? result.length() : 0);
+        log.info("美化完成，输出长度: {} 字符", result != null ? result.length() : 0);
         return result;
     }
 
@@ -123,16 +126,20 @@ public class EnhancedAIService {
      * AI写作助手 - 根据标题生成内容
      */
     public String generateContent(String title, String context) {
-        logger.info(">>> 调用AI写作功能");
-        logger.info("标题: {}", title);
-        logger.info("上下文长度: {} 字符", context != null ? context.length() : 0);
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return generateContent(title, context, null, null, null);
+    }
+
+    public String generateContent(String title, String context,
+                                  Double temperature, Integer maxTokens, String model) {
+        log.info(">>> 调用AI写作功能");
+        log.info("标题: {}", title);
+        log.info("上下文长度: {} 字符", context != null ? context.length() : 0);
         String systemPrompt = "你是一个专业的文档写作助手。请根据用户提供的标题和上下文，生成高质量的Markdown文档内容。";
         String prompt = "标题: " + title + "\n\n" + 
                        (context != null && !context.isEmpty() ? "上下文: " + context + "\n\n" : "") +
                        "请生成完整的Markdown文档内容：";
-        String result = aiService.generateContent(prompt, systemPrompt);
-        logger.info("写作完成，输出长度: {} 字符", result != null ? result.length() : 0);
+        String result = invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
+        log.info("写作完成，输出长度: {} 字符", result != null ? result.length() : 0);
         return result;
     }
 
@@ -146,14 +153,14 @@ public class EnhancedAIService {
     public String improveContent(String content, String style,
                                  Double temperature, Integer maxTokens,
                                  Boolean stream, String model) {
-        logger.info(">>> 调用语言润色功能");
-        logger.info("输入内容长度: {} 字符", content != null ? content.length() : 0);
-        logger.info("润色风格: {}", style);
+        log.info(">>> 调用语言润色功能");
+        log.info("输入内容长度: {} 字符", content != null ? content.length() : 0);
+        log.info("润色风格: {}", style);
         String styleDesc = style != null ? style : "专业、清晰、易读";
         String systemPrompt = "你是一个专业的文本润色专家。请优化文本的表达方式，使其更加" + styleDesc + "。";
         String prompt = "请润色以下内容，使其更加" + styleDesc + "：\n\n" + content;
         String result = invokeAI(systemPrompt, prompt, temperature, maxTokens, stream, model);
-        logger.info("润色完成，输出长度: {} 字符", result != null ? result.length() : 0);
+        log.info("润色完成，输出长度: {} 字符", result != null ? result.length() : 0);
         return result;
     }
 
@@ -161,10 +168,15 @@ public class EnhancedAIService {
      * 语法检查
      */
     public String checkGrammar(String content) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return checkGrammar(content, null, null, null, null);
+    }
+
+    public String checkGrammar(String content,
+                               Double temperature, Integer maxTokens,
+                               Boolean stream, String model) {
         String systemPrompt = "你是一个语法检查专家。请检查以下Markdown内容的语法错误、拼写错误和格式问题，并提供修正建议。";
         String prompt = "请检查以下内容的语法和格式问题：\n\n" + content + "\n\n请指出错误并提供修正后的内容：";
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, stream, model);
     }
 
     /**
@@ -201,11 +213,15 @@ public class EnhancedAIService {
      * 解释代码
      */
     public String explainCode(String code, String language) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return explainCode(code, language, null, null, null);
+    }
+
+    public String explainCode(String code, String language,
+                              Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个代码解释专家。请详细解释代码的功能、逻辑和使用方法。";
         String prompt = "请解释以下" + (language != null ? language : "") + "代码：\n\n```" + 
                        (language != null ? language : "") + "\n" + code + "\n```";
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
     }
 
     /**
@@ -242,51 +258,71 @@ public class EnhancedAIService {
      * 生成列表
      */
     public String generateList(String topic) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return generateList(topic, null, null, null);
+    }
+
+    public String generateList(String topic,
+                               Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个列表生成专家。请根据主题生成结构化的Markdown列表。";
         String prompt = "请为以下主题生成一个详细的Markdown列表：\n\n" + topic;
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
     }
 
     /**
      * 优化标题
      */
     public String optimizeTitles(String content) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return optimizeTitles(content, null, null, null);
+    }
+
+    public String optimizeTitles(String content,
+                                 Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个标题优化专家。请优化文档中的标题层级和标题文字，使其更加清晰和准确。";
         String prompt = "请优化以下文档的标题：\n\n" + content;
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
     }
 
     /**
      * 生成表格
      */
     public String generateTable(String description) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return generateTable(description, null, null, null);
+    }
+
+    public String generateTable(String description,
+                                Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个表格生成专家。请根据描述生成Markdown格式的表格。";
         String prompt = "请根据以下描述生成Markdown表格：\n\n" + description;
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
     }
 
     /**
      * 文档问答
      */
     public String answerQuestion(String document, String question) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return answerQuestion(document, question, null, null, null);
+    }
+
+    public String answerQuestion(String document, String question,
+                                 Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个文档问答助手。请根据提供的文档内容回答用户的问题。";
         String prompt = "文档内容：\n\n" + document + "\n\n问题：" + question + "\n\n请回答：";
-        return aiService.generateContent(prompt, systemPrompt);
+        return invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
     }
 
     /**
      * 分析文档
      */
     public Map<String, Object> analyzeDocument(String content) {
-        AIService aiService = aiServiceFactory.getDefaultService();
+        return analyzeDocument(content, null, null, null);
+    }
+
+    public Map<String, Object> analyzeDocument(String content,
+                                               Double temperature, Integer maxTokens, String model) {
         String systemPrompt = "你是一个文档分析专家。请分析文档的结构、主题、关键词和阅读难度。";
         String prompt = "请分析以下文档：\n\n" + content + "\n\n请提供：1. 文档主题 2. 关键词 3. 文档结构 4. 阅读难度评估";
         
-        String analysis = aiService.generateContent(prompt, systemPrompt);
+        String analysis = invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
         
         Map<String, Object> result = new HashMap<>();
         result.put("analysis", analysis);
@@ -306,17 +342,10 @@ public class EnhancedAIService {
     }
 
     /**
-     * 切换AI服务提供商
-     */
-    public void switchProvider(String provider) {
-        aiServiceFactory.switchProvider(provider);
-    }
-
-    /**
-     * 获取当前AI服务提供商
+     * 获取当前AI服务提供商（固定返回ernie，因为统一使用百度千帆）
      */
     public String getCurrentProvider() {
-        return aiServiceFactory.getCurrentProvider();
+        return "ernie";
     }
 }
 

@@ -36,22 +36,12 @@ server:
 cors:
   allowed-origins: http://localhost:3000
 
-# AI服务配置
+# AI服务配置（统一使用百度千帆平台）
 ai:
-  # 当前使用的AI服务: ernie (文心一言) 或 qwen (通义千问)
-  provider: ernie
-  # 文心一言配置（百度千帆平台）
-  # 使用ERNIE 4.5 Turbo模型
+  # 百度千帆配置
   # 获取方式：https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application
   ernie:
     api-key: bce-v3/ALTAK-XwxIDe6sAFbZBhYojEIES/2251130425beddf0a0b3784a4715e049bb3b5ee3
     app-id: app-0BApSgld
     model: ernie-4.5-turbo-128k
-    api-url: https://qianfan.baidubce.com/v2/chat/completions
-  # 通义千问配置（百度千帆平台）
-  # 使用通义千问3-235B-A22B模型
-  qwen:
-    api-key: bce-v3/ALTAK-XwxIDe6sAFbZBhYojEIES/2251130425beddf0a0b3784a4715e049bb3b5ee3
-    app-id: app-0BApSgld
-    model: qwen-3-235b-a22b
     api-url: https://qianfan.baidubce.com/v2/chat/completions

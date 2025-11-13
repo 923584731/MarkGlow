@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { Layout, Menu, message, Modal } from 'antd';
-import { EditOutlined, FileTextOutlined } from '@ant-design/icons';
+import { EditOutlined, FileTextOutlined, BarChartOutlined } from '@ant-design/icons';
 import './App.css';
 import Editor from './components/Editor';
 import DocumentList from './components/DocumentList';
 import DocumentView from './components/DocumentView';
+import StatisticsDashboard from './components/StatisticsDashboard';
 import { getDocuments, saveDocument, updateDocument, deleteDocument, searchDocuments } from './services/api';
 
 const { Header, Content } = Layout;
 
 function App() {
-  const [currentView, setCurrentView] = useState('editor'); // 'editor', 'list', 'view'
+  const [currentView, setCurrentView] = useState('editor'); // 'editor', 'list', 'view', 'statistics'
   const [documents, setDocuments] = useState([]);
   const [selectedDocument, setSelectedDocument] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -134,6 +135,13 @@ function App() {
           >
             文档列表
           </Menu.Item>
+          <Menu.Item 
+            key="statistics" 
+            icon={<BarChartOutlined />}
+            onClick={() => setCurrentView('statistics')}
+          >
+            使用统计
+          </Menu.Item>
         </Menu>
       </Header>
 
@@ -157,6 +165,9 @@ function App() {
             document={selectedDocument}
             onBack={handleBackToList}
           />
+        )}
+        {currentView === 'statistics' && (
+          <StatisticsDashboard />
         )}
       </Content>
     </Layout>
