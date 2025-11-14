@@ -481,15 +481,17 @@ public class AIController {
             (Boolean) requestBody.get("stream") : true;
         String style = (String) requestBody.get("style");
         String targetLang = (String) requestBody.get("targetLang");
-        log.info("收到流式请求 action={} 内容长度={} temp={} maxTokens={} model={} stream={} style={} targetLang={}",
-                action, content != null ? content.length() : 0, temperature, maxTokens, model, stream, style, targetLang);
+        String title = (String) requestBody.get("title");
+        String context = (String) requestBody.get("context");
+        log.info("收到流式请求 action={} 内容长度={} temp={} maxTokens={} model={} stream={} style={} targetLang={} title={}",
+                action, content != null ? content.length() : 0, temperature, maxTokens, model, stream, style, targetLang, title);
         SseEmitter emitter = new SseEmitter(0L);
         CompletableFuture.runAsync(() -> {
             long start = System.currentTimeMillis();
             try {
                 // 使用真正的流式传输，每收到一个chunk就立即发送给前端
                 String result = enhancedAIService.routeActionStream(
-                    action, content, temperature, maxTokens, model, style, targetLang,
+                    action, content, temperature, maxTokens, model, style, targetLang, title, context,
                     chunk -> {
                         // 回调函数：每收到一个chunk就立即通过SSE发送给前端
                         try {

@@ -37,72 +37,19 @@ function AIResultModal({
 }) {
   if (!result) return null;
 
-  // 根据功能类型决定显示哪些操作按钮
+  // 所有功能都显示三个按钮：替换原文、追加到末尾、复制结果
   const getAvailableActions = () => {
     const actions = [];
     
-    switch (action) {
-      case 'beautify':
-        // 美化：只显示替换
-        actions.push({ key: 'replace', label: '替换文档', icon: <ReloadOutlined /> });
-        break;
-      
-      case 'translate':
-        // 翻译：替换、追加、仅查看
-        actions.push({ key: 'replace', label: '替换原文', icon: <ReloadOutlined /> });
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        actions.push({ key: 'copy', label: '复制结果', icon: <CopyOutlined /> });
-        break;
-      
-      case 'summarize':
-        // 摘要：追加、复制
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        actions.push({ key: 'copy', label: '复制摘要', icon: <CopyOutlined /> });
-        break;
-      
-      case 'improve':
-        // 润色：如果有选中文本，显示替换选中；否则显示替换和追加
-        if (selectedText) {
-          actions.push({ key: 'replaceSelected', label: '替换选中文本', icon: <EditOutlined /> });
-        }
-        actions.push({ key: 'replace', label: '替换整个文档', icon: <ReloadOutlined /> });
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        break;
-      
-      case 'checkGrammar':
-        // 语法检查：替换、复制
-        actions.push({ key: 'replace', label: '应用修复', icon: <CheckOutlined /> });
-        actions.push({ key: 'copy', label: '复制结果', icon: <CopyOutlined /> });
-        break;
-      
-      case 'explainCode':
-        // 代码解释：追加、复制
-        actions.push({ key: 'append', label: '追加到代码下方', icon: <PlusOutlined /> });
-        actions.push({ key: 'copy', label: '复制解释', icon: <CopyOutlined /> });
-        break;
-      
-      case 'expand':
-        // 扩展段落：替换选中或追加
-        if (selectedText) {
-          actions.push({ key: 'replaceSelected', label: '替换选中文本', icon: <EditOutlined /> });
-        }
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        break;
-      
-      case 'generate':
-      case 'generateList':
-      case 'generateTable':
-        // 生成内容：追加、复制
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        actions.push({ key: 'copy', label: '复制结果', icon: <CopyOutlined /> });
-        break;
-      
-      default:
-        // 默认：替换、追加、复制
-        actions.push({ key: 'replace', label: '替换文档', icon: <ReloadOutlined /> });
-        actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
-        actions.push({ key: 'copy', label: '复制结果', icon: <CopyOutlined /> });
+    // 如果有选中文本，优先显示替换选中文本（仅对 improve 和 expand 功能）
+    if (selectedText && (action === 'improve' || action === 'expand')) {
+      actions.push({ key: 'replaceSelected', label: '替换选中文本', icon: <EditOutlined /> });
     }
+    
+    // 所有功能都显示这三个按钮
+    actions.push({ key: 'replace', label: '替换原文', icon: <ReloadOutlined /> });
+    actions.push({ key: 'append', label: '追加到末尾', icon: <PlusOutlined /> });
+    actions.push({ key: 'copy', label: '复制结果', icon: <CopyOutlined /> });
     
     return actions;
   };

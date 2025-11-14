@@ -63,29 +63,6 @@ ai:
 - 确保账户有足够的额度
 - 模型名称：`ernie-4.5-turbo-128k`
 
-## 通义千问配置（通义千问3-235B-A22B）
-
-### 1. 获取API Key和App ID
-
-1. 访问 [百度智能云千帆控制台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
-2. 登录您的百度账号
-3. 创建应用，获取 API Key 和 App ID
-4. 确保开通了千帆大模型服务
-5. 选择通义千问3-235B-A22B模型
-
-### 2. 配置参数
-
-在 `application.yml` 中配置：
-
-```yaml
-ai:
-  provider: qwen
-  qwen:
-    api-key: your-qwen-api-key  # Bearer Token格式，如：bce-v3/ALTAK-xxx/xxx
-    app-id: your-app-id          # 应用ID
-    model: qwen-3-235b-a22b      # 模型名称
-    api-url: https://qianfan.baidubce.com/v2/chat/completions
-```
 
 ### 3. 注意事项
 
@@ -97,17 +74,6 @@ ai:
 
 ## 切换AI服务
 
-### 在前端切换
-
-1. 点击编辑器工具栏的"🤖 AI 功能"按钮
-2. 在AI菜单顶部可以看到服务切换按钮
-3. 点击"文心一言"或"通义千问"即可切换
-
-### 在配置文件中切换
-
-修改 `application.yml` 中的 `ai.provider` 值：
-- `ernie` - 使用文心一言
-- `qwen` - 使用通义千问
 
 ## API调用说明
 
@@ -119,14 +85,6 @@ ai:
 - API端点：`https://qianfan.baidubce.com/v2/chat/completions`
 - 需要 `appid` header
 
-### 通义千问 API（通义千问3-235B-A22B）
-
-- 使用Bearer Token认证（直接使用API Key）
-- 支持流式和非流式响应（当前实现为非流式）
-- 模型：通义千问3-235B-A22B
-- API端点：`https://qianfan.baidubce.com/v2/chat/completions`
-- 需要 `appid` header
-- 注意：通义千问也是通过百度千帆平台调用
 
 ## 常见问题
 

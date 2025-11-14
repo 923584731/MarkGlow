@@ -58,11 +58,11 @@ public class EnhancedAIService {
      * 流式路由：根据 action 分发到对应功能，支持实时流式回调
      */
     public String routeActionStream(String action, String content, Double temperature, Integer maxTokens, 
-                                    String model, String style, String targetLang,
+                                    String model, String style, String targetLang, String title, String context,
                                     Consumer<String> chunkConsumer) {
         String actionSafe = action != null ? action : "beautify";
-        log.info(">> 流式路由AI动作 action={}, temp={}, maxTokens={}, model={}, style={}, targetLang={}", 
-                actionSafe, temperature, maxTokens, model, style, targetLang);
+        log.info(">> 流式路由AI动作 action={}, temp={}, maxTokens={}, model={}, style={}, targetLang={}, title={}", 
+                actionSafe, temperature, maxTokens, model, style, targetLang, title);
         
         AIService aiService = aiServiceFactory.getDefaultService();
         String systemPrompt;
@@ -72,6 +72,19 @@ public class EnhancedAIService {
             case "beautify":
                 systemPrompt = "你是一个Markdown文档美化专家。请优化以下Markdown内容的格式、排版和结构，使其更加清晰易读。保持原有内容不变，只优化格式。";
                 prompt = "请美化以下Markdown内容：\n\n" + content;
+                break;
+            case "generate":
+                // AI写作：根据标题和参考内容生成文档
+                systemPrompt = "你是一个专业的文档写作助手。请根据用户提供的标题和上下文，生成高质量的Markdown文档内容。";
+                StringBuilder promptBuilder = new StringBuilder();
+                promptBuilder.append("请根据以下标题生成完整的Markdown文档：\n\n");
+                promptBuilder.append("标题：").append(title != null ? title : "").append("\n\n");
+                if (context != null && !context.trim().isEmpty()) {
+                    promptBuilder.append("参考内容（可作为写作参考，但请以标题为主要依据）：\n");
+                    promptBuilder.append(context).append("\n\n");
+                }
+                promptBuilder.append("请生成完整的Markdown文档内容，确保内容与标题高度相关：");
+                prompt = promptBuilder.toString();
                 break;
             case "improve":
                 String styleDesc = style != null ? style : "专业、清晰、易读";
@@ -135,9 +148,16 @@ public class EnhancedAIService {
         log.info("标题: {}", title);
         log.info("上下文长度: {} 字符", context != null ? context.length() : 0);
         String systemPrompt = "你是一个专业的文档写作助手。请根据用户提供的标题和上下文，生成高质量的Markdown文档内容。";
-        String prompt = "标题: " + title + "\n\n" + 
-                       (context != null && !context.isEmpty() ? "上下文: " + context + "\n\n" : "") +
-                       "请生成完整的Markdown文档内容：";
+        // 确保标题和上下文都包含在 prompt 中，标题是主要依据
+        StringBuilder promptBuilder = new StringBuilder();
+        promptBuilder.append("请根据以下标题生成完整的Markdown文档：\n\n");
+        promptBuilder.append("标题：").append(title).append("\n\n");
+        if (context != null && !context.trim().isEmpty()) {
+            promptBuilder.append("参考内容（可作为写作参考，但请以标题为主要依据）：\n");
+            promptBuilder.append(context).append("\n\n");
+        }
+        promptBuilder.append("请生成完整的Markdown文档内容，确保内容与标题高度相关：");
+        String prompt = promptBuilder.toString();
         String result = invokeAI(systemPrompt, prompt, temperature, maxTokens, null, model);
         log.info("写作完成，输出长度: {} 字符", result != null ? result.length() : 0);
         return result;
